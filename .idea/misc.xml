@@ -3,6 +3,9 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/ORT/4 Cuatrimestre/PF/SafetyDetector-Android/app/src/main/res/layout/activity_home_screen.xml" value="0.259963768115942" />
+        <entry key="..\:/ORT/4 Cuatrimestre/PF/SafetyDetector-Android/app/src/main/res/layout/activity_main.xml" value="0.259963768115942" />
+        <entry key="..\:/ORT/4 Cuatrimestre/PF/SafetyDetector-Android/app/src/main/res/layout/activity_splash_screen.xml" value="0.259963768115942" />
         <entry key="..\:/ORT/4 Cuatrimestre/TP3/kotlin-principiantes/CameraX/app/src/main/res/layout/activity_main.xml" value="0.259963768115942" />
       </map>
     </option>
