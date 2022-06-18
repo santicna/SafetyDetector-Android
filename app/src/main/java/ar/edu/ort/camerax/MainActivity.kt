@@ -164,6 +164,7 @@ class MainActivity : AppCompatActivity() {
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                 try {
                     val encodedImage = convertImageToBase64String(photoFile.absolutePath)
+                    photoFile.delete()
                     sendImage(encodedImage, photoFile.name)
                 } catch (exception : Exception) {
                     Toast.makeText(baseContext, "Hubo un error desconocido", Toast.LENGTH_SHORT).show()
