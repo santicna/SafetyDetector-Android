@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
     private fun convertImageToBase64String(@NonNull path : String): String {
         val bitmap = BitmapFactory.decodeFile(path)
         val outputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
         return Base64.getEncoder().encodeToString(outputStream.toByteArray())
     }
 
@@ -85,6 +85,7 @@ class MainActivity : AppCompatActivity() {
                 stringBuilder.append(output)
             }
             return stringBuilder.toString()
+
         } catch (exception : Exception) {
             Log.e(TAG, "No se pudo leer la respuesta del servidor", exception)
             return ""
@@ -102,7 +103,7 @@ class MainActivity : AppCompatActivity() {
             }
             Log.d(TAG, msg)
 
-            val url = URL("http://localhost:5255/api/Images")
+            val url = URL("http://localhost:5255/api/SafetyPredictions")
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json;charset=utf-8")
@@ -120,9 +121,15 @@ class MainActivity : AppCompatActivity() {
                 val input: ByteArray = jsonRequest.toByteArray(Charsets.UTF_8)
                 outputStream.write(input, 0, input.size)
             }
-
+            val response = getResponseBody(connection)
             if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                val msg = "Se envió la foto con éxito"
+                lateinit var msg : String
+                if(response.contains("\"isSafe\":true")) {
+                    msg = "Es seguro"
+                }
+                else{
+                    msg = "No es seguro"
+                }
                 runOnUiThread {
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
                 }
@@ -134,7 +141,7 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
                 }
             }
-            Log.d(TAG, "El servidor respondió con statusCode=${connection.responseCode} y body=${getResponseBody(connection)}")
+            Log.d(TAG, "El servidor respondió con statusCode=${connection.responseCode} y body=${response}")
         }.start()
     }
 
