@@ -7,10 +7,12 @@
         <entry key="..\:/ORT/4 Cuatrimestre/PF/SafetyDetector-Android/app/src/main/res/layout/activity_main.xml" value="0.259963768115942" />
         <entry key="..\:/ORT/4 Cuatrimestre/PF/SafetyDetector-Android/app/src/main/res/layout/activity_splash_screen.xml" value="0.259963768115942" />
         <entry key="..\:/ORT/4 Cuatrimestre/TP3/kotlin-principiantes/CameraX/app/src/main/res/layout/activity_main.xml" value="0.259963768115942" />
+        <entry key="app/src/main/res/layout/activity_home_screen.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.18645833333333334" />
       </map>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" project-jdk-name="1.8" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />
   </component>
   <component name="ProjectType">
