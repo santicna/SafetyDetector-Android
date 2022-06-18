@@ -1,26 +1,37 @@
 package ar.edu.ort.camerax
 
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
+//import kotlinx.android.synthetic.main.activity_main.*
+
 import android.Manifest
 import android.content.pm.PackageManager
-import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.os.Build
+import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.Toast
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import java.util.concurrent.Executors
+import androidx.annotation.NonNull
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
-import ar.edu.ort.camerax.R
-//import kotlinx.android.synthetic.main.activity_main.*
 import androidx.camera.view.PreviewView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import java.io.BufferedReader
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
 import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
+
 typealias LumaListener = (luma: Double) -> Unit
 
 class MainActivity : AppCompatActivity() {
@@ -53,6 +64,72 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun convertImageToBase64String(@NonNull imageProxy: ImageProxy): String {
+        val buffer: ByteBuffer = imageProxy.planes[0].buffer
+        val bytes = ByteArray(buffer.capacity())
+        buffer.get(bytes)
+        //val bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
+        return Base64.getEncoder().encodeToString(bytes)
+    }
+
+    private fun getResponseBody(@NonNull connection : HttpURLConnection) : String {
+        try {
+            val responseReader =
+                if (connection.responseCode in 100..399) {
+                    BufferedReader(InputStreamReader(connection.inputStream));
+                } else {
+                    BufferedReader(InputStreamReader(connection.errorStream));
+                }
+            val stringBuilder = StringBuilder()
+            var output: String?
+            while (responseReader.readLine().also { output = it } != null) {
+                stringBuilder.append(output)
+            }
+            return stringBuilder.toString()
+        } catch (exception : Exception) {
+            Log.e(TAG, "No se pudo leer la respuesta del servidor", exception)
+            return ""
+         }
+    }
+
+    private fun sendImage(@NonNull imageBase64: String, @NonNull imageName: String) {
+        val msg = "Enviando foto para analizar"
+        //Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+        Log.d(TAG, msg)
+
+        val url = URL("http://localhost:5255/api/Images")
+        val connection = url.openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.setRequestProperty("Content-Type", "application/json;charset=utf-8")
+        connection.setRequestProperty("Accept", "application/json;charset=utf-8")
+        connection.doOutput = true
+
+        val jsonRequest =
+            """
+                    {
+                        "base64ImageString": "$imageBase64",
+                        "imageName": "$imageName"
+                    }
+            """
+
+        connection.outputStream.use { outputStream ->
+            val input: ByteArray = jsonRequest.toByteArray(Charsets.UTF_8)
+            outputStream.write(input, 0, input.size)
+        }
+
+        if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+            val msg = "Se envió la foto con éxito"
+            //Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+            Log.d(TAG, msg)
+        } else {
+            val msg = "Ocurrió un error enviando la foto"
+            Log.d(TAG, msg)
+            //Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+        }
+        Log.d(TAG, getResponseBody(connection))
+    }
+
     private fun takePhoto() {
         // Get a stable reference of the modifiable image capture use case
         val imageCapture = imageCapture ?: return
@@ -68,19 +145,56 @@ class MainActivity : AppCompatActivity() {
 
         // Set up image capture listener, which is triggered after photo has
         // been taken
+        val callback = object : ImageCapture.OnImageCapturedCallback() {
+            @RequiresApi(Build.VERSION_CODES.O)
+            override fun onCaptureSuccess(@NonNull image: ImageProxy) {
+                sendImage(convertImageToBase64String(image), image.imageInfo.timestamp as String)
+
+
+
+                /*val baos = ByteArrayOutputStream()
+                BitmapFactory.decodeStream(image.image)
+                val bitmap = BitmapFactory.decodeResource(resources, R.drawable.logo)
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+                val imageBytes: ByteArray = baos.toByteArray()
+                */
+            }
+            override fun onError(@NonNull exception: ImageCaptureException) {
+                val msg = "No se pudo tomar la foto: ${exception.message}"
+                Log.e(TAG, msg, exception)
+                Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+            }
+        }
+        val executor = ContextCompat.getMainExecutor(this)
+        //imageCapture.takePicture(executor, callback)
+
+
         imageCapture.takePicture(
-                outputOptions, ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageSavedCallback {
-            override fun onError(exc: ImageCaptureException) {
-                Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+                outputOptions, executor, object : ImageCapture.OnImageSavedCallback {
+            override fun onError(exception: ImageCaptureException) {
+                val msg = "No se pudo tomar la foto: ${exception.message}"
+                Log.e(TAG, msg, exception)
+                Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
             }
 
+            @RequiresApi(Build.VERSION_CODES.O)
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                val savedUri = Uri.fromFile(photoFile)
-                val msg = "Photo capture succeeded: $savedUri"
-                Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                Log.d(TAG, msg)
+                try {
+                    val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
+                    val outputStream = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                    val encodedImage: String = Base64.getEncoder().encodeToString(outputStream.toByteArray())
+                    Thread {
+                        sendImage(encodedImage, photoFile.name)
+                    }.start()
+                } catch (exception : Exception) {
+                    Toast.makeText(baseContext, "Hubo un error desconocido", Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, exception.message, exception)
+                }
+
             }
         })
+        
     }
 
     private fun startCamera() {
