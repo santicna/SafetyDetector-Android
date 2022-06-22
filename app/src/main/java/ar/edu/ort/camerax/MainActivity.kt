@@ -6,6 +6,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -62,12 +63,16 @@ class MainActivity : AppCompatActivity() {
 
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
+    private fun Bitmap.rotate(degrees: Float): Bitmap {
+        val matrix = Matrix().apply { postRotate(degrees) }
+        return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun convertImageToBase64String(@NonNull path : String): String {
         val bitmap = BitmapFactory.decodeFile(path)
         val outputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
+        bitmap.rotate(90F).compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
         return Base64.getEncoder().encodeToString(outputStream.toByteArray())
     }
 
@@ -170,6 +175,7 @@ class MainActivity : AppCompatActivity() {
             @RequiresApi(Build.VERSION_CODES.O)
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                 try {
+
                     val encodedImage = convertImageToBase64String(photoFile.absolutePath)
                     photoFile.delete()
                     sendImage(encodedImage, photoFile.name)
