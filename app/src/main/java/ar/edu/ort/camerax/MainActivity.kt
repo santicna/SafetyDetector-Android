@@ -108,7 +108,7 @@ class MainActivity : AppCompatActivity() {
             }
             Log.d(TAG, msg)
 
-            val url = URL("http://localhost:5255/api/SafetyPredictions")
+            val url = URL("http://localhost:5255/v0/api/predictions")
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json;charset=utf-8")
